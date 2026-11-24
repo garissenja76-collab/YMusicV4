@@ -176,7 +176,7 @@ impl Session {
             let window = CreateWindowExW(
                 WS_EX_TOOLWINDOW,
                 CLASS_NAME,
-                w!("YMusic"),
+                w!("AUTUMN"),
                 WS_POPUP,
                 0,
                 0,

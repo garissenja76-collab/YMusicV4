@@ -16,7 +16,7 @@ Start-Process -FilePath $Launcher
 
 /// Runs the Inno Setup installer once this process has exited (a running app's files are locked):
 /// a detached PowerShell step waits for our exit, runs the setup elevated (the UAC prompt) showing
-/// progress only, then starts YMusic again unelevated, whether or not the user accepted.
+/// progress only, then starts AUTUMN again unelevated, whether or not the user accepted.
 pub struct WindowsSetupInstaller {
     launcher: Option<PathBuf>,
 }

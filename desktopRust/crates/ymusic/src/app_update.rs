@@ -83,7 +83,7 @@ impl UpgradeNotice {
     }
 }
 
-/// Records this launch's versionCode, and on the first launch after an update says "YMusic updated
+    /// Records this launch's versionCode, and on the first launch after an update says "AUTUMN updated
 /// to X" with View changelog. Once per process.
 pub fn show_upgrade_notice(window: &mut Window, cx: &mut App) {
     if !cx.has_global::<UpgradeNotice>() {

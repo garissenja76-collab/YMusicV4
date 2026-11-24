@@ -1,4 +1,4 @@
-//! The accent color (`theme.accent`, `RRGGBB`, blank = the default orange) and its picker: preset
+//! The accent color (`theme.accent`, `RRGGBB`, blank = the default Frosted Blue) and its picker: preset
 //! swatches, a hue slider and a hex field.
 
 use gpui_kit::base::actions::Confirm;
@@ -13,7 +13,7 @@ use crate::a11y::{FocusList, SliderStop};
 use crate::elevated_dialog::{DEFAULT_WIDTH, ROW_HORIZONTAL, button_bar, chrome, press, text_button, title_bar};
 
 pub const ACCENT_KEY: &str = "theme.accent";
-const DEFAULT_ACCENT: Rgb = Rgb::hex(0xE8732A);
+const DEFAULT_ACCENT: Rgb = Rgb::hex(0x1565C0);
 /// The lightest an accent may be, so white text on it stays readable. The default sits right at it.
 const MAX_ACCENT_LUMINANCE: f32 = 0.3;
 const PRESETS: [Rgb; 8] = [
@@ -22,7 +22,7 @@ const PRESETS: [Rgb; 8] = [
     Rgb::hex(0xC2185B),
     Rgb::hex(0x7B1FA2),
     Rgb::hex(0x341C9A),
-    Rgb::hex(0x1565C0),
+    Rgb::hex(0x1976D2),
     Rgb::hex(0x00796B),
     Rgb::hex(0x2E7D32),
 ];

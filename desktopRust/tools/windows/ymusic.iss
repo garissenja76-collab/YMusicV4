@@ -1,27 +1,25 @@
 ; The Windows installer, compiled by tools/package-windows.sh (ISCC /D defines: AppVersion,
 ; AppSourceDir, IconFile, OutputDir, OutputBaseName, Arch; when signing, SignTool: the name of an
-; ISCC /S sign tool). It installs over the JVM app's Inno Setup install (YMusicV4
-; desktopApp/installer/windows/ymusic.iss), so the identity below is that script's: the same AppId,
-; folder, executable path and AppUserModelID.
+; ISCC /S sign tool). This fork has a separate installer and Windows app identity from YMusicV4.
 ;
-; Build input: AppSourceDir holds YMusic.exe, ffmpeg.exe and the libav / MinGW runtime DLLs.
+; Build input: AppSourceDir holds AUTUMN.exe, ffmpeg.exe and the libav / MinGW runtime DLLs.
 
-#define AppName "YMusic"
-#define AppExeName "YMusic.exe"
-#define AppPublisher "YMusic"
+#define AppName "AUTUMN"
+#define AppExeName "AUTUMN.exe"
+#define AppPublisher "AUTUMN"
 #define AppURL "https://ymusic.io"
-#define MediaProgId "YMusic.Media"
+#define MediaProgId "AUTUMN.Media"
 ; The taskbar and the media flyout find the app's name and icon through the shortcut carrying it,
 ; and a pin merges with the running window only when they match (crates/ymusic desktop.rs).
-#define AppUserModelId "io.ymusic.windows"
-; Never change: Inno finds the previous install by AppId, so a new one would install side by side.
-#define AppId "{{6F3C2B9E-4D1A-4E8B-9A57-2C1F0D8E7B34}"
+#define AppUserModelId "io.autumn.windows"
+#define AppId "{{A6E59CB3-2B4A-4DF3-9B20-3B8A58C1D2F7}"
 
 [Setup]
 AppId={#AppId}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
+AppComments=YOUR MUSIC. YOUR MOMENT.
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
@@ -69,7 +67,7 @@ Source: "{#AppSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdi
 
 [Registry]
 ; ymusic:// links reach the running app through the single instance.
-Root: HKA; Subkey: "Software\Classes\ymusic"; ValueType: string; ValueData: "URL:YMusic"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\ymusic"; ValueType: string; ValueData: "URL:AUTUMN"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\ymusic"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
 Root: HKA; Subkey: "Software\Classes\ymusic\DefaultIcon"; ValueType: string; ValueData: "{app}\{#AppExeName},0"
 Root: HKA; Subkey: "Software\Classes\ymusic\shell\open\command"; ValueType: string; ValueData: """{app}\{#AppExeName}"" ""%1"""

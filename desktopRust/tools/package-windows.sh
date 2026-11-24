@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the release ymusic on Windows (Git Bash; MinGW gcc, or clang on arm64, on PATH) and stages
-# the app folder: YMusic.exe, the packed ffmpeg.exe and the libav / MinGW runtime DLLs beside it,
+# the app folder: AUTUMN.exe, the packed ffmpeg.exe and the libav / MinGW runtime DLLs beside it,
 # plus any runtime DLL the executable imports from the compiler's bin folder. --setup also
 # compiles the Inno Setup installer that the JVM app's updater runs over its own install
 # (tools/windows/ymusic.iss), named as the release asset YMusic-<version>-windows-<x64|arm64>-setup.exe.
@@ -19,6 +19,7 @@
 set -euo pipefail
 
 APP_NAME=YMusic
+APP_EXE_NAME=AUTUMN
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 build=1
@@ -86,11 +87,11 @@ if [[ $stage == 1 ]]; then
 
     rm -rf "$app"
     mkdir -p "$app"
-    cp "$binary" "$app/$APP_NAME.exe"
+    cp "$binary" "$app/$APP_EXE_NAME.exe"
     cp "$ffmpeg_root"/pack/*.dll "$ffmpeg_root/pack/ffmpeg.exe" "$app/"
     # Every DLL the executable imports is shipped here or part of Windows (api-ms-win-* are API sets);
     # a toolchain runtime the ffmpeg pack lacks (libunwind.dll under clang) comes from beside the compiler.
-    missing=$("$objdump" -p "$app/$APP_NAME.exe" | sed -n 's/^\s*DLL Name: //p' | while read -r dll; do
+    missing=$("$objdump" -p "$app/$APP_EXE_NAME.exe" | sed -n 's/^\s*DLL Name: //p' | while read -r dll; do
         [[ $dll == api-ms-win-* || -f $app/$dll || -f /c/Windows/System32/$dll ]] && continue
         if [[ -f $(dirname "$compiler")/$dll ]]; then cp "$(dirname "$compiler")/$dll" "$app/"; else echo "$dll"; fi
     done)
@@ -99,7 +100,7 @@ if [[ $stage == 1 ]]; then
 fi
 
 [[ $setup == 1 ]] || exit 0
-[[ -f $app/$APP_NAME.exe ]] || die "no app folder at $app"
+[[ -f $app/$APP_EXE_NAME.exe ]] || die "no app executable at $app/$APP_EXE_NAME.exe"
 iscc=${ISCC:-}
 if [[ -z $iscc ]]; then
     for candidate in "${LOCALAPPDATA:-}"/Programs/Inno\ Setup\ */ISCC.exe "/c/Program Files (x86)"/Inno\ Setup\ */ISCC.exe \

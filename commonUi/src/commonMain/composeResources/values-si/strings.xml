@@ -627,7 +627,7 @@
     <string name="cd_move_to_top">ඉහළට ගෙන යන්න</string>
     <string name="dialog_undo">පසුගමනය</string>
     <string name="dialog_save">සුරකින්න</string>
-    <string name="upgraded_message">YMusic %1$s වෙත යාවත්කාලීන විය</string>
+    <string name="upgraded_message">AUTUMN %1$s වෙත යාවත්කාලීන විය</string>
     <string name="upgraded_view_changelog">වෙනස්කම් බලන්න</string>
     <string name="menu_go_to_artist">කලාකරු වෙත යන්න</string>
     <string name="menu_go_to_album">ඇල්බමය වෙත යන්න</string>

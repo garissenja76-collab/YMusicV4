@@ -58,7 +58,7 @@ fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
     crate::desktop::set_pin_accent(accent);
     let on_accent = white();
     let amoled = choice == "amoled";
-    let ui_font = linux_ui_font(cx);
+    let ui_font = platform_ui_font(cx);
     let mut tones = ChromeTones { flat: black(), lifted: black(), dialog: black() };
     let mut stack = StackTones { near: black(), far: black(), tab: black() };
     let mut container = AccentTones { ground: black(), ink: black() };
@@ -369,13 +369,22 @@ impl Palette {
 /// is IBM Plex Sans, rarely installed, which leaves each glyph to a different fallback face and
 /// breaks Vietnamese diacritics.
 const LINUX_UI_FONTS: [&str; 5] = ["Adwaita Sans", "Cantarell", "Noto Sans", "Ubuntu Sans", "DejaVu Sans"];
+const WINDOWS_UI_FONTS: [&str; 2] = ["Inter", "Segoe UI"];
 
-fn linux_ui_font(cx: &App) -> Option<SharedString> {
-    if !cfg!(target_os = "linux") {
+fn platform_ui_font(cx: &App) -> Option<SharedString> {
+    let fonts = if cfg!(target_os = "windows") {
+        &WINDOWS_UI_FONTS[..]
+    } else if cfg!(target_os = "linux") {
+        &LINUX_UI_FONTS[..]
+    } else {
         return None;
-    }
+    };
     let installed = cx.text_system().all_font_names();
-    LINUX_UI_FONTS.into_iter().find(|font| installed.iter().any(|name| name == font)).map(SharedString::from)
+    fonts
+        .iter()
+        .copied()
+        .find(|font| installed.iter().any(|name| name.as_str() == *font))
+        .map(SharedString::from)
 }
 
 /// Writes a setting off the UI thread, then redraws every window so its readers see it.

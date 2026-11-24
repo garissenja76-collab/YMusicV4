@@ -169,9 +169,9 @@ pub fn set_dock_icon(_log: &Logger) {}
 fn app_user_model_id() -> &'static str {
     static ID: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     ID.get_or_init(|| match (cfg!(debug_assertions), crate::dev_instance::workspace()) {
-        (false, _) => "io.ymusic.windows".to_owned(),
-        (true, None) => "io.ymusic.windows.dev".to_owned(),
-        (true, Some(workspace)) => format!("io.ymusic.windows.dev.{}", workspace.id),
+        (false, _) => "io.autumn.windows".to_owned(),
+        (true, None) => "io.autumn.windows.dev".to_owned(),
+        (true, Some(workspace)) => format!("io.autumn.windows.dev.{}", workspace.id),
     })
 }
 
@@ -262,13 +262,13 @@ fn write_dev_start_menu_entry(exe: &Path, arguments: &str) -> anyhow::Result<()>
 /// with what a file name cannot hold replaced.
 #[cfg(all(target_os = "windows", debug_assertions))]
 fn dev_start_menu_entry_name() -> String {
-    let Some(workspace) = crate::dev_instance::workspace() else { return "YMusic Dev.lnk".to_owned() };
+    let Some(workspace) = crate::dev_instance::workspace() else { return "AUTUMN Dev.lnk".to_owned() };
     let name: String = workspace
         .name
         .chars()
         .map(|character| if character.is_control() || r#"<>:"/\|?*"#.contains(character) { '-' } else { character })
         .collect();
-    format!("YMusic Dev ({}).lnk", name.trim_end_matches(['.', ' ']))
+    format!("AUTUMN Dev ({}).lnk", name.trim_end_matches(['.', ' ']))
 }
 
 const APP_ID: &str = "io.ymusic.YMusic";

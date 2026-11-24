@@ -1,7 +1,8 @@
 # desktopRust
 
-The YMusic desktop app for macOS, Windows and Linux, written in Rust. Downloads and the setup shared
-with the other apps (JDK, Node.js, ffmpeg-build) are in the [root README](../README.md).
+The AUTUMN desktop app for Windows, macOS and Linux, forked from YMusicV4 and written in Rust.
+Downloads and the setup shared with the other apps (JDK, Node.js, ffmpeg-build) are in the
+[root README](../README.md).
 
 ## Run
 

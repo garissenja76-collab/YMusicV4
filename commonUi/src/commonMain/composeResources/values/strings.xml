@@ -1,6 +1,7 @@
 <resources>
     <!-- Brand marks — identical in every language; translations omit them on purpose. -->
-    <string name="app_name">YMusic</string>
+    <string name="app_name">AUTUMN</string>
+    <string name="app_tagline">YOUR MUSIC. YOUR MOMENT.</string>
     <string name="badge_premium">PREMIUM</string>
 
     <!-- Drawer sections -->
@@ -782,7 +783,7 @@
     <string name="cd_move_to_top">Move to top</string>
     <string name="dialog_undo">Undo</string>
     <string name="dialog_save">Save</string>
-    <string name="upgraded_message">YMusic updated to %1$s</string>
+    <string name="upgraded_message">AUTUMN updated to %1$s</string>
     <string name="upgraded_view_changelog">View changelog</string>
     <string name="menu_go_to_artist">Go to artist</string>
     <string name="menu_go_to_album">Go to album</string>

@@ -627,7 +627,7 @@
     <string name="cd_move_to_top">انتقال به بالا</string>
     <string name="dialog_undo">واگرد</string>
     <string name="dialog_save">ذخیره</string>
-    <string name="upgraded_message">YMusic به نسخهٔ %1$s به‌روز شد</string>
+    <string name="upgraded_message">AUTUMN به نسخهٔ %1$s به‌روز شد</string>
     <string name="upgraded_view_changelog">مشاهدهٔ تغییرات</string>
     <string name="menu_go_to_artist">رفتن به هنرمند</string>
     <string name="menu_go_to_album">رفتن به آلبوم</string>

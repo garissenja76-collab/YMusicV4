@@ -2026,12 +2026,16 @@ impl Shell {
                 ),
             )
             .child(
-                v_flex().min_w_0().child(div().font_semibold().child(t(Str::AppName))).child(
-                    div()
-                        .text_xs()
-                        .text_color(theme.muted_foreground)
-                        .child(format!("v{}", crate::graph::APP_VERSION_NAME)),
-                ),
+                v_flex()
+                    .min_w_0()
+                    .child(div().font_semibold().child(t(Str::AppName)))
+                    .child(div().text_xs().text_color(theme.muted_foreground).child(t(Str::AppTagline)))
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(theme.muted_foreground)
+                            .child(format!("v{}", crate::graph::APP_VERSION_NAME)),
+                    ),
             )
     }
 
