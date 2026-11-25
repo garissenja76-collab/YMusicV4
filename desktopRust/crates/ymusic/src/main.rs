@@ -30,6 +30,7 @@ mod feed;
 mod feedback_view;
 mod file_rename;
 mod fps_badge;
+mod glass_components;
 mod graph;
 mod images;
 mod instance;

@@ -2064,11 +2064,23 @@ impl LibraryView {
             .join(", ");
         let subtitle =
             subtitle.map(|subtitle| div().text_xs().text_color(theme.muted_foreground).truncate().child(subtitle));
-        let base = list_item(div().id(id), position)
+        let colors = crate::design_system::active_colors(cx);
+        let item = if grid {
+            crate::glass_components::GlassCard::surface(div().id(id), cx)
+        } else {
+            div().id(id).rounded(px(10.))
+        };
+        let base = list_item(item, position)
             .aria_label(label)
-            .rounded(px(10.))
             .when(!dimmed, |card| {
-                card.cursor_pointer().hover(|style| style.bg(theme.primary.opacity(crate::settings_view::HOVER_ALPHA)))
+                card.cursor_pointer().hover(|style| {
+                    let fill = if grid {
+                        colors.glass_surface_hover
+                    } else {
+                        theme.primary.opacity(crate::settings_view::HOVER_ALPHA)
+                    };
+                    style.bg(fill)
+                })
             })
             .when(dimmed, |card| card.opacity(0.4));
         if grid {

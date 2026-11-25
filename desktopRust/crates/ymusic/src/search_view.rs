@@ -290,26 +290,29 @@ impl Render for SearchView {
             self.input.update(cx, |state, cx| state.focus(window, cx));
         }
         let theme = cx.theme().clone();
-        let bar = h_flex()
-            .gap_2()
-            .px_2()
-            .pt(px(2.))
-            .pb(px(3.))
-            .border_b_1()
-            .border_color(theme.border)
-            .child(
-                self.bar_focus.button(
-                    0,
-                    action_icon("search-back", auto_mirrored(MaterialIcon::ArrowBack), t(Str::CdBack))
-                        .on_click(cx.listener(|view, _, _, cx| view.back(cx))),
-                    cx,
+        let bar = crate::glass_components::GlassSearchBar::wrap(
+            h_flex()
+                .gap_2()
+                .px_2()
+                .pt(px(2.))
+                .pb(px(3.))
+                .child(
+                    self.bar_focus.button(
+                        0,
+                        action_icon("search-back", auto_mirrored(MaterialIcon::ArrowBack), t(Str::CdBack))
+                            .on_click(cx.listener(|view, _, _, cx| view.back(cx))),
+                        cx,
+                    ),
+                )
+                .child(
+                    crate::glass_components::GlassSearchBar::field(
+                        self.bar_focus
+                            .field(1, &self.input.focus_handle(cx), Input::new(&self.input).cleanable(true), cx),
+                        cx,
+                    ),
                 ),
-            )
-            .child(
-                self.bar_focus
-                    .field(1, &self.input.focus_handle(cx), Input::new(&self.input).cleanable(true), cx)
-                    .flex_1(),
-            );
+            cx,
+        );
         let typed = self.input.read(cx).value().trim().to_owned();
         if typed.is_empty() && self.history.is_empty() {
             let hint = div()

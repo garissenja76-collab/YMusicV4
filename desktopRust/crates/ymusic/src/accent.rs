@@ -198,9 +198,9 @@ impl AccentPicker {
         let default = Rgb::parse(default_hex).unwrap_or(FALLBACK_ACCENT);
         let start = Rgb::parse(saved).map(Rgb::darkened).unwrap_or(default);
         let view = cx.new(|cx| Self::new(start, default, Box::new(on_pick), window, cx));
-        window.open_dialog(cx, move |dialog, window, _| {
+        window.open_dialog(cx, move |dialog, window, cx| {
             let enter = view.downgrade();
-            chrome(dialog, DEFAULT_WIDTH, window)
+            crate::glass_components::GlassDialog::style(chrome(dialog, DEFAULT_WIDTH, window), cx)
                 .on_ok(move |_, window, cx| {
                     enter.update(cx, |view, cx| view.confirm(window, cx)).ok();
                     false

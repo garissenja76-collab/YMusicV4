@@ -1,10 +1,12 @@
 //! AUTUMN's reusable visual tokens. Glass colors carry alpha; they do not blur content behind them.
 
+use gpui_kit::component::ActiveTheme;
 use gpui_kit::*;
 
 fn color(value: u32) -> Hsla {
     rgb(value).into()
 }
+
 pub const WINDOWS_FONT_FAMILIES: [&str; 2] = ["Inter", "Segoe UI"];
 pub const DARK_ACCENT_HEX: &str = "5EAAFF";
 pub const LIGHT_ACCENT_HEX: &str = "387FC3";
@@ -116,6 +118,16 @@ pub struct Colors {
     pub glass_surface_opacity: f32,
     pub glass_hover_opacity: f32,
     pub glass_border_opacity: f32,
+}
+
+#[derive(Clone, Copy)]
+pub struct ActiveColors(pub Colors);
+
+impl Global for ActiveColors {}
+
+pub fn active_colors(cx: &App) -> Colors {
+    cx.try_global::<ActiveColors>()
+        .map_or_else(|| colors(cx.theme().mode.is_dark(), false), |active| active.0)
 }
 
 pub fn colors(dark: bool, amoled: bool) -> Colors {

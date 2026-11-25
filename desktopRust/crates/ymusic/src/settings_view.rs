@@ -147,6 +147,7 @@ fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
     cx.set_global(container);
     cx.set_global(card);
     cx.set_global(menu);
+    cx.set_global(design_system::ActiveColors(colors));
 }
 
 /// The JVM app's `primaryContainer` / `onPrimaryContainer`: a selected rail or drawer entry, the
@@ -190,14 +191,10 @@ pub fn snackbar_action(cx: &App) -> Hsla {
 /// Every menu as the JVM app draws Material 3's `DropdownMenu` (androidx material3 1.4 `Menu.kt`,
 /// `MenuTokens`, `ListTokens`) with its theme and `MoreMenuItem` / `MoreMenuDivider`.
 fn menu_style(palette: &Palette, accent: Hsla) -> PopupMenuStyle {
-    PopupMenuStyle {
-        background: Some(palette.surface_dim),
-        radius: Some(px(RADIUS.small)),
-        // Elevation level 2 (3dp), as Material's own CSS spells it; gpui's blur is CSS's halved.
-        shadow: Some(vec![
-            BoxShadow::new(px(0.), px(1.), black().opacity(0.3)).blur_radius(px(1.)),
-            BoxShadow::new(px(0.), px(2.), black().opacity(0.15)).blur_radius(px(3.)).spread_radius(px(2.)),
-        ]),
+    let style = PopupMenuStyle {
+        background: None,
+        radius: None,
+        shadow: None,
         offset: Some(px(0.)),
         padding_x: Some(px(0.)),
         padding_y: Some(px(8.)),
@@ -207,7 +204,7 @@ fn menu_style(palette: &Palette, accent: Hsla) -> PopupMenuStyle {
         item_height: Some(px(48.)),
         item_padding_x: Some(px(12.)),
         item_radius: Some(px(0.)),
-        highlight: Some(accent.opacity(HOVER_ALPHA)),
+        highlight: None,
         text_size: Some(px(14.)),
         line_height: Some(px(20.)),
         font_weight: Some(FontWeight::MEDIUM),
@@ -242,7 +239,13 @@ fn menu_style(palette: &Palette, accent: Hsla) -> PopupMenuStyle {
         label_color: Some(palette.ink_secondary),
         label_padding_x: Some(px(16.)),
         label_padding_y: Some(px(8.)),
-    }
+    };
+    crate::glass_components::GlassPopup::style(
+        style,
+        palette.surface_elevated,
+        palette.divider,
+        accent.opacity(HOVER_ALPHA),
+    )
 }
 
 /// A picker's menu whose current choice reads in the accent, the others in regular weight (the JVM

@@ -2051,17 +2051,19 @@ impl Shell {
         let theme = cx.theme();
         let selected = self.section == section;
         let container = *cx.global::<crate::settings_view::AccentTones>();
-        let hover = theme.primary.opacity(HOVER_ALPHA);
-        let entry = div()
-            .id(("section", section.id() as usize))
-            .role(Role::Tab)
-            .aria_label(section.label())
-            .aria_selected(selected)
-            .cursor_pointer()
-            .relative()
-            .when(selected, |entry| entry.bg(container.ground))
-            .hover(move |style| style.bg(if selected { container.ground.blend(hover) } else { hover }))
-            .on_click(cx.listener(move |shell, _, _, cx| shell.select_section(section, cx)));
+        let entry = crate::glass_components::GlassNavigationItem::wrap(
+            div()
+                .id(("section", section.id() as usize))
+                .role(Role::Tab)
+                .aria_label(section.label())
+                .aria_selected(selected)
+                .cursor_pointer()
+                .relative(),
+            selected,
+            container.ground,
+            cx,
+        )
+        .on_click(cx.listener(move |shell, _, _, cx| shell.select_section(section, cx)));
         let position = Section::groups(self.guest).iter().flatten().position(|entry| *entry == section);
         let entry = self.nav_focus.item(position.unwrap_or(0), entry, cx);
         let tint = if selected { container.ink } else { theme.foreground };
@@ -2184,46 +2186,46 @@ impl Shell {
                     .children(check_update)
                     .children(website),
             );
-        div()
-            .id("rail")
-            .role(Role::Navigation)
-            .w(px(width + RAIL_DIVIDER))
-            .h_full()
-            .flex_shrink_0()
-            .overflow_hidden()
-            .bg(chrome_tone(cx))
-            .border_r(px(RAIL_DIVIDER))
-            .border_color(theme.border)
-            .child(contents)
+        crate::glass_components::GlassSidebar::wrap(
+            div()
+                .id("rail")
+                .role(Role::Navigation)
+                .w(px(width + RAIL_DIVIDER))
+                .h_full()
+                .flex_shrink_0()
+                .overflow_hidden()
+                .border_r(px(RAIL_DIVIDER))
+                .child(contents),
+            cx,
+        )
             .into_any_element()
     }
 
     fn render_drawer(&self, cx: &mut Context<Self>) -> AnyElement {
         let theme = cx.theme().clone();
-        let panel = v_flex()
-            .id("drawer")
-            .role(Role::Navigation)
-            .w(px(DRAWER_WIDTH))
-            .h_full()
-            .bg(theme.background)
-            .border_r_1()
-            .border_color(theme.border)
-            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-            .child(
-                div()
-                    .pl(px(18.))
-                    .pr(px(18.))
-                    .pt_4()
-                    .pb(px(13.))
-                    .child(self.brand(46., cx))
-                    .children(crate::app_update::check_link("drawer-check-update", cx)),
-            )
-            .child(div().h(px(1.)).w_full().bg(theme.border))
-            .child(div().id("drawer-scroll").flex_1().overflow_y_scroll().py_2().child(self.section_groups(
-                true,
-                DRAWER_ICON_START,
-                cx,
-            )));
+        let panel = crate::glass_components::GlassSidebar::wrap(
+            v_flex()
+                .id("drawer")
+                .role(Role::Navigation)
+                .w(px(DRAWER_WIDTH))
+                .h_full()
+                .border_r_1()
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(
+                    div()
+                        .pl(px(18.))
+                        .pr(px(18.))
+                        .pt_4()
+                        .pb(px(13.))
+                        .child(self.brand(46., cx))
+                        .children(crate::app_update::check_link("drawer-check-update", cx)),
+                )
+                .child(div().h(px(1.)).w_full().bg(theme.border))
+                .child(div().id("drawer-scroll").flex_1().overflow_y_scroll().py_2().child(
+                    self.section_groups(true, DRAWER_ICON_START, cx),
+                )),
+            cx,
+        );
         div()
             .absolute()
             .inset_0()

@@ -556,16 +556,16 @@ impl MiniPlayer {
                     self.focus.slider(STOP_VOLUME, &self.volume, stop, slider, cx).w(px(BAR_VOLUME_WIDTH))
                 })
         });
-        h_flex()
-            .id("player-bar")
-            .w_full()
-            .gap_4()
-            .px_4()
-            .py_2()
-            .items_center()
-            .border_t_1()
-            .border_color(theme.border)
-            .bg(crate::shell::chrome_tone(cx))
+        crate::glass_components::GlassPlayerPanel::wrap(
+            h_flex()
+                .id("player-bar")
+                .w_full()
+                .gap_4()
+                .px_4()
+                .py_2()
+                .items_center(),
+            cx,
+        )
             .on_click(cx.listener(|_, _, _, cx| cx.emit(ToggleNowPlaying)))
             .child(info)
             .child(transport)

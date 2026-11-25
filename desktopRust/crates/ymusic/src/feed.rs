@@ -1370,15 +1370,21 @@ impl FeedView {
         item: &YtFeedItem,
         queue: Option<std::rc::Rc<Vec<YtFeedItem>>>,
         row: Option<ScrollHandle>,
+        glass: bool,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let clicked = item.clone();
         let theme = cx.theme();
+        let hover = if glass {
+            crate::design_system::active_colors(cx).glass_surface_hover
+        } else {
+            theme.primary.opacity(HOVER_ALPHA)
+        };
         let element = list_item(div().id(id), position)
             .aria_label(item_label(item, self.downloaded(item, cx)))
             .cursor_pointer()
             .rounded(px(12.))
-            .hover(|style| style.bg(theme.primary.opacity(HOVER_ALPHA)))
+            .hover(move |style| style.bg(hover))
             .on_click(cx.listener(move |view, _, _, cx| {
                 let queue =
                     queue.as_ref().map(|items| items.iter().filter(|item| item.kind == "video").cloned().collect());
@@ -1402,11 +1408,13 @@ impl FeedView {
         let hit = if item.kind == "channel" { HIT } else { GRID_MENU_HIT };
         let menu = self.item_menu(item, cx);
         let more = self.more_button(&menu, ("card-more", index), hit, cx);
-        let card = self
-            .clickable(("feed-card", index), position, item, queue, None, cx)
-            .flex_1()
-            .min_w_0()
-            .p(px(bands.inset()));
+        let card = crate::glass_components::GlassCard::interactive(
+            self.clickable(("feed-card", index), position, item, queue, None, true, cx)
+                .flex_1()
+                .min_w_0()
+                .p(px(bands.inset())),
+            cx,
+        );
         if item.kind == "channel" {
             let card = card
                 .relative()
@@ -1537,7 +1545,7 @@ impl FeedView {
                         .child(text),
                 )
             });
-        let row = self.clickable(("feed-row", index), position, item, queue, None, cx).child(
+        let row = self.clickable(("feed-row", index), position, item, queue, None, false, cx).child(
             h_flex()
                 .pl_4()
                 .pr_1()
@@ -1738,7 +1746,15 @@ impl FeedView {
                     .clone();
                 let cells = cells.render(section.items.len(), 4., stops.kept(), window, |offset| {
                     let item = &section.items[offset];
-                    self.clickable(("carousel", first_item + offset), offset, item, None, Some(row_scroll.clone()), cx)
+                    self.clickable(
+                        ("carousel", first_item + offset),
+                        offset,
+                        item,
+                        None,
+                        Some(row_scroll.clone()),
+                        false,
+                        cx,
+                    )
                         .w(px(CAROUSEL_CELL))
                         .flex_shrink_0()
                         .p_1()
