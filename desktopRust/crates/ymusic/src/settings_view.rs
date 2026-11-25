@@ -17,6 +17,7 @@ use ym_settings::SettingsStore;
 use crate::a11y::{FocusList, heading};
 use crate::accent::{ACCENT_KEY, AccentPicker, accent_color, oklab_lerp};
 use crate::caption_style::{CaptionLook, CaptionStyleDialog};
+use crate::design_system::{self, RADIUS};
 use crate::downloads::download_folder;
 use crate::feedback_view::link;
 use crate::graph::{AppGraph, on_core};
@@ -54,10 +55,13 @@ fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
         "dark" | "amoled" => Theme::change(ThemeMode::Dark, None, cx),
         _ => Theme::sync_system_appearance(None, cx),
     }
-    let accent = accent_color(accent);
-    crate::desktop::set_pin_accent(accent);
-    let on_accent = white();
+    let dark = cx.theme().mode.is_dark();
     let amoled = choice == "amoled";
+    let colors = design_system::colors(dark, amoled);
+    let default_accent = colors.accent_hex;
+    let accent = accent_color(accent, default_accent);
+    crate::desktop::set_pin_accent(accent);
+    let on_accent = if accent.l > 0.55 { black() } else { white() };
     let ui_font = platform_ui_font(cx);
     let mut tones = ChromeTones { flat: black(), lifted: black(), dialog: black() };
     let mut stack = StackTones { near: black(), far: black(), tab: black() };
@@ -83,8 +87,9 @@ fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
         theme.slider_thumb = accent;
         theme.switch_thumb = on_accent;
         // Material 3's extra-small shape, the JVM app's menus.
-        theme.radius = px(4.);
-        let palette = Palette::for_mode(theme.mode.is_dark(), amoled);
+        theme.radius = px(RADIUS.control);
+        theme.radius_lg = px(RADIUS.dialog);
+        let palette = Palette::from_tokens(colors);
         theme.background = palette.surface;
         theme.foreground = palette.ink;
         theme.muted_foreground = palette.ink_secondary;
@@ -100,6 +105,9 @@ fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
         theme.popover_foreground = palette.ink;
         theme.secondary = palette.settings_card;
         theme.secondary_foreground = palette.ink;
+        theme.success = colors.success;
+        theme.warning = colors.warning;
+        theme.danger = colors.error;
         theme.muted = palette.placeholder;
         theme.input = palette.outline;
         // The kit halves this token on a dark ghost button.
@@ -116,7 +124,7 @@ fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
             .bg(snackbar)
             .text_color(snackbar_ink)
             .border_0()
-            .rounded(px(4.))
+            .rounded(px(RADIUS.small))
             .px(px(16.))
             .py(px(14.));
         theme.notification.close_color = Some(snackbar_ink);
@@ -184,7 +192,7 @@ pub fn snackbar_action(cx: &App) -> Hsla {
 fn menu_style(palette: &Palette, accent: Hsla) -> PopupMenuStyle {
     PopupMenuStyle {
         background: Some(palette.surface_dim),
-        radius: Some(px(4.)),
+        radius: Some(px(RADIUS.small)),
         // Elevation level 2 (3dp), as Material's own CSS spells it; gpui's blur is CSS's halved.
         shadow: Some(vec![
             BoxShadow::new(px(0.), px(1.), black().opacity(0.3)).blur_radius(px(1.)),
@@ -323,45 +331,22 @@ struct Palette {
 }
 
 impl Palette {
-    fn for_mode(dark: bool, amoled: bool) -> Self {
-        let palette = if dark {
-            Self {
-                surface: rgb(0x272727).into(),
-                surface_dim: rgb(0x313131).into(),
-                surface_elevated: rgb(0x292929).into(),
-                settings_card: rgb(0x333333).into(),
-                placeholder: rgb(0x454545).into(),
-                stack_near: rgb(0x454545).into(),
-                stack_far: rgb(0x3d3d3d).into(),
-                stack_tab: rgb(0x424242).into(),
-                outline: rgb(0x5c5c5c).into(),
-                divider: rgb(0x2a2a2a).into(),
-                ink: rgb(0xe2e2e2).into(),
-                ink_muted: rgb(0xc6c6c6).into(),
-                ink_secondary: rgb(0x9a9a9a).into(),
-            }
-        } else {
-            Self {
-                surface: rgb(0xffffff).into(),
-                surface_dim: rgb(0xfafafa).into(),
-                surface_elevated: rgb(0xf5f5f5).into(),
-                settings_card: rgb(0xf2f2f2).into(),
-                placeholder: rgb(0xe3e3e3).into(),
-                stack_near: rgb(0xececec).into(),
-                stack_far: rgb(0xf3f3f3).into(),
-                stack_tab: rgb(0xededed).into(),
-                outline: rgb(0xcfcfcf).into(),
-                divider: rgb(0xe6e6e6).into(),
-                ink: rgb(0x333333).into(),
-                ink_muted: rgb(0x555555).into(),
-                ink_secondary: rgb(0x8a8a8a).into(),
-            }
-        };
-        if !amoled {
-            return palette;
+    fn from_tokens(colors: design_system::Colors) -> Self {
+        Self {
+            surface: colors.background,
+            surface_dim: colors.background_elevated,
+            surface_elevated: colors.glass_surface,
+            settings_card: colors.glass_surface,
+            placeholder: colors.glass_surface_hover,
+            stack_near: colors.glass_border,
+            stack_far: colors.glass_surface,
+            stack_tab: colors.background_elevated,
+            outline: colors.glass_border,
+            divider: colors.glass_border,
+            ink: colors.text_primary,
+            ink_muted: colors.text_secondary,
+            ink_secondary: colors.text_muted,
         }
-        let ground: Hsla = black();
-        Self { surface: ground, surface_dim: ground, surface_elevated: ground, settings_card: ground, ..palette }
     }
 }
 
@@ -369,11 +354,9 @@ impl Palette {
 /// is IBM Plex Sans, rarely installed, which leaves each glyph to a different fallback face and
 /// breaks Vietnamese diacritics.
 const LINUX_UI_FONTS: [&str; 5] = ["Adwaita Sans", "Cantarell", "Noto Sans", "Ubuntu Sans", "DejaVu Sans"];
-const WINDOWS_UI_FONTS: [&str; 2] = ["Inter", "Segoe UI"];
-
 fn platform_ui_font(cx: &App) -> Option<SharedString> {
     let fonts = if cfg!(target_os = "windows") {
-        &WINDOWS_UI_FONTS[..]
+        &design_system::WINDOWS_FONT_FAMILIES[..]
     } else if cfg!(target_os = "linux") {
         &LINUX_UI_FONTS[..]
     } else {
@@ -917,13 +900,15 @@ impl Render for SettingsView {
         let theme_row = self.wide(self.focus.row(theme_stop, theme_row, cx));
 
         let entity = cx.entity().downgrade();
-        let swatch = div().size(px(20.)).rounded_full().bg(accent_color(&accent));
+        let default_accent = design_system::colors(cx.theme().mode.is_dark(), false).accent_hex;
+        let swatch = div().size(px(20.)).rounded_full().bg(accent_color(&accent, default_accent));
         let accent_row = button_row("accent", t(Str::SettingsAccentColor), None, swatch, cx)
             .accessibility_label(t(Str::SettingsAccentColor))
             .on_click(move |_, window, cx| {
                 let view = entity.clone();
                 AccentPicker::open(
                     &accent,
+                    default_accent,
                     move |hex, cx| {
                         view.update(cx, |view, cx| view.set_accent(hex, cx)).ok();
                     },

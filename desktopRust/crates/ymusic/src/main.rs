@@ -16,6 +16,7 @@ mod cookie_lock;
 mod cookie_session;
 mod data_files;
 mod desktop;
+mod design_system;
 mod dev_instance;
 #[cfg(target_os = "linux")]
 mod dock_quicklist;

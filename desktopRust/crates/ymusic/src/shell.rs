@@ -1032,7 +1032,13 @@ impl Shell {
                 let view = self.settings_view(cx);
                 let dialog = dialog.to_owned();
                 window.defer(cx, move |window, cx| match dialog.as_str() {
-                    "accent" => crate::accent::AccentPicker::open("", |_, _| {}, window, cx),
+                    "accent" => crate::accent::AccentPicker::open(
+                        "",
+                        crate::design_system::colors(cx.theme().mode.is_dark(), false).accent_hex,
+                        |_, _| {},
+                        window,
+                        cx,
+                    ),
                     "captions" => crate::caption_style::CaptionStyleDialog::open(window, cx),
                     "region" => crate::settings_lists::RegionPicker::open(view, window, cx),
                     "licenses" => crate::settings_lists::Licenses::open(window, cx),

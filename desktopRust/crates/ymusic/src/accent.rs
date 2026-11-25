@@ -13,11 +13,11 @@ use crate::a11y::{FocusList, SliderStop};
 use crate::elevated_dialog::{DEFAULT_WIDTH, ROW_HORIZONTAL, button_bar, chrome, press, text_button, title_bar};
 
 pub const ACCENT_KEY: &str = "theme.accent";
-const DEFAULT_ACCENT: Rgb = Rgb::hex(0x1565C0);
-/// The lightest an accent may be, so white text on it stays readable. The default sits right at it.
+const FALLBACK_ACCENT: Rgb = Rgb::hex(0x5EAAFF);
+/// Custom accents are darkened to keep white button text readable.
 const MAX_ACCENT_LUMINANCE: f32 = 0.3;
 const PRESETS: [Rgb; 8] = [
-    DEFAULT_ACCENT,
+    FALLBACK_ACCENT,
     Rgb::hex(0xD32F2F),
     Rgb::hex(0xC2185B),
     Rgb::hex(0x7B1FA2),
@@ -121,8 +121,8 @@ impl Rgb {
 }
 
 /// The saved accent (`RRGGBB`) as drawn; blank or malformed is the default.
-pub fn accent_color(saved: &str) -> Hsla {
-    accent_rgb(saved).hsla()
+pub fn accent_color(saved: &str, default_hex: &str) -> Hsla {
+    accent_rgb(saved, default_hex).hsla()
 }
 
 /// Compose's `lerp(start, stop, fraction)`: interpolated in Oklab, opaque.
@@ -165,8 +165,8 @@ fn from_oklab([lightness, green_red, blue_yellow]: [f64; 3]) -> Rgba {
     }
 }
 
-fn accent_rgb(saved: &str) -> Rgb {
-    Rgb::parse(saved).map(Rgb::darkened).unwrap_or(DEFAULT_ACCENT)
+fn accent_rgb(saved: &str, default_hex: &str) -> Rgb {
+    Rgb::parse(saved).map(Rgb::darkened).or_else(|| Rgb::parse(default_hex)).unwrap_or(FALLBACK_ACCENT)
 }
 
 /// The highest value [`Rgb::darkened`] allows at this hue and saturation.
@@ -178,6 +178,7 @@ pub struct AccentPicker {
     hue: f32,
     saturation: f32,
     value: f32,
+    default: Rgb,
     hue_slider: Entity<SliderState>,
     hex: Entity<InputState>,
     focus: FocusList,
@@ -187,9 +188,16 @@ pub struct AccentPicker {
 
 impl AccentPicker {
     /// `on_pick` gets the hex to save: blank when the pick is the default.
-    pub fn open(saved: &str, on_pick: impl Fn(String, &mut App) + 'static, window: &mut Window, cx: &mut App) {
-        let start = accent_rgb(saved);
-        let view = cx.new(|cx| Self::new(start, Box::new(on_pick), window, cx));
+    pub fn open(
+        saved: &str,
+        default_hex: &str,
+        on_pick: impl Fn(String, &mut App) + 'static,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        let default = Rgb::parse(default_hex).unwrap_or(FALLBACK_ACCENT);
+        let start = Rgb::parse(saved).map(Rgb::darkened).unwrap_or(default);
+        let view = cx.new(|cx| Self::new(start, default, Box::new(on_pick), window, cx));
         window.open_dialog(cx, move |dialog, window, _| {
             let enter = view.downgrade();
             chrome(dialog, DEFAULT_WIDTH, window)
@@ -201,7 +209,7 @@ impl AccentPicker {
         });
     }
 
-    fn new(start: Rgb, on_pick: OnPick, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    fn new(start: Rgb, default: Rgb, on_pick: OnPick, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let (hue, saturation, value) = start.hsv();
         let hue_slider = cx.new(|_| SliderState::new().min(0.).max(HUE_MAX).step(1.).default_value(hue));
         let hex = cx.new(|cx| {
@@ -231,6 +239,7 @@ impl AccentPicker {
             hue,
             saturation,
             value,
+            default,
             hue_slider,
             hex,
             focus: FocusList::modal(None, cx),
@@ -240,6 +249,10 @@ impl AccentPicker {
     }
 
     fn picked(&self) -> Rgb {
+        let picked = Rgb::from_hsv(self.hue, self.saturation, self.value);
+        if picked.to_hex() == self.default.to_hex() {
+            return self.default;
+        }
         Rgb::from_hsv(self.hue, self.saturation, self.value.min(max_value(self.hue, self.saturation)))
     }
 
@@ -258,7 +271,7 @@ impl AccentPicker {
 
     fn confirm(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let hex = self.picked().to_hex();
-        let saved = if hex == DEFAULT_ACCENT.to_hex() { String::new() } else { hex };
+        let saved = if hex == self.default.to_hex() { String::new() } else { hex };
         (self.on_pick)(saved, cx);
         window.close_dialog(cx);
     }
@@ -271,8 +284,9 @@ impl Render for AccentPicker {
         let selected_hex = picked.to_hex();
         let name = t(Str::SettingsAccentColor);
         let mut swatches = h_flex().flex_wrap().gap_2();
-        for (index, preset) in PRESETS.iter().enumerate() {
-            let color = preset.darkened();
+        let presets = std::iter::once(self.default).chain(PRESETS.iter().copied().skip(1)).collect::<Vec<_>>();
+        for (index, preset) in presets.iter().enumerate() {
+            let color = if *preset == self.default { *preset } else { preset.darkened() };
             let selected = color.to_hex() == selected_hex;
             let preset = *preset;
             let swatch = div()
@@ -310,7 +324,10 @@ impl Render for AccentPicker {
                 stops,
                 text_button("accent-reset", t(Str::SoundReset), false, true, cx),
                 true,
-                cx.listener(|view, _, window, cx| view.set_color_and_hex(DEFAULT_ACCENT, window, cx)),
+                cx.listener(|view, _, window, cx| {
+                    let default = view.default;
+                    view.set_color_and_hex(default, window, cx)
+                }),
                 cx,
             ))
             .child(press(
