@@ -322,8 +322,8 @@ impl MiniPlayer {
             .items_center()
             .justify_center()
             .cursor_pointer()
-            .bg(theme.foreground)
-            .text_color(theme.background)
+            .bg(theme.primary)
+            .text_color(theme.primary_foreground)
             .child(if loading {
                 Spinner::new().small().into_any_element()
             } else {

@@ -20,6 +20,8 @@ impl GlassCard {
             .border_color(colors.glass_border)
             .bg(colors.glass_surface)
             .shadow(vec![SHADOW_CARD.to_box_shadow()])
+            .hover(move |style| style.bg(colors.glass_surface_hover))
+            .active(move |style| style.bg(colors.glass_surface_hover))
     }
 
     pub fn wrap(child: impl IntoElement, cx: &App) -> Stateful<Div> {
