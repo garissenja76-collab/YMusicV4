@@ -115,9 +115,6 @@ pub struct Colors {
     pub warning: Hsla,
     pub error: Hsla,
     pub player_surface: Hsla,
-    pub glass_surface_opacity: f32,
-    pub glass_hover_opacity: f32,
-    pub glass_border_opacity: f32,
 }
 
 #[derive(Clone, Copy)]
@@ -151,9 +148,6 @@ pub fn colors(dark: bool, amoled: bool) -> Colors {
             warning: color(0xFFBF69),
             error: color(0xFF727F),
             player_surface: color(0x08131F),
-            glass_surface_opacity: 0.86,
-            glass_hover_opacity: 0.91,
-            glass_border_opacity: 0.22,
         }
     } else {
         Colors {
@@ -173,9 +167,6 @@ pub fn colors(dark: bool, amoled: bool) -> Colors {
             warning: color(0x955C00),
             error: color(0xB42335),
             player_surface: color(0x102338),
-            glass_surface_opacity: 0.85,
-            glass_hover_opacity: 0.93,
-            glass_border_opacity: 0.25,
         }
     }
 }
