@@ -2546,7 +2546,7 @@ impl Render for Shell {
                     shell
                 } else {
                     shell.child(
-                        div().relative().w_full().child(self.mini_player.clone()).child(
+                        div().relative().w_full().flex_shrink_0().child(self.mini_player.clone()).child(
                             canvas(
                                 |bounds, window, cx| place_notifications(bounds.size.height, window, cx),
                                 |_, _, _, _| {},
