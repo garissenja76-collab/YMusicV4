@@ -44,22 +44,29 @@ fn saved_theme(settings: &dyn SettingsStore) -> String {
 }
 
 pub fn apply_saved_theme(settings: &dyn SettingsStore, cx: &mut App) {
-    apply_theme(&saved_theme(settings), &saved(settings, ACCENT_KEY), cx);
+    apply_theme(&saved_theme(settings), &saved(settings, ACCENT_KEY), None, cx);
+}
+
+pub fn sync_system_theme(settings: &dyn SettingsStore, window: &mut Window, cx: &mut App) {
+    if saved_theme(settings).is_empty() {
+        apply_theme("", &saved(settings, ACCENT_KEY), Some(window), cx);
+    }
 }
 
 /// `light`, `dark`, `amoled` (dark on pure black) or anything else for the system's, with the
 /// accent (`RRGGBB`, blank = default) on every primary surface.
-fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
+fn apply_theme(choice: &str, accent: &str, window: Option<&mut Window>, cx: &mut App) {
     match choice {
         "light" => Theme::change(ThemeMode::Light, None, cx),
         "dark" | "amoled" => Theme::change(ThemeMode::Dark, None, cx),
-        _ => Theme::sync_system_appearance(None, cx),
+        _ => Theme::sync_system_appearance(window, cx),
     }
     let dark = cx.theme().mode.is_dark();
     let amoled = choice == "amoled";
-    let colors = design_system::colors(dark, amoled);
+    let mut colors = design_system::colors(dark, amoled);
     let default_accent = colors.accent_hex;
     let accent = accent_color(accent, default_accent);
+    colors.accent = accent;
     crate::desktop::set_pin_accent(accent);
     let on_accent = if accent.l > 0.55 { black() } else { white() };
     let ui_font = platform_ui_font(cx);
@@ -76,6 +83,7 @@ fn apply_theme(choice: &str, accent: &str, cx: &mut App) {
         theme.primary_hover = accent.lighten(0.1);
         theme.primary_active = accent.darken(0.1);
         theme.primary_foreground = on_accent;
+        theme.ring = accent;
         theme.button_primary = accent;
         theme.button_primary_hover = accent.lighten(0.1);
         theme.button_primary_active = accent.darken(0.1);
@@ -655,13 +663,13 @@ impl SettingsView {
 
     fn set_theme(&mut self, choice: &'static str, cx: &mut Context<Self>) {
         let accent = saved(cx.global::<AppGraph>().settings.as_ref(), ACCENT_KEY);
-        apply_theme(choice, &accent, cx);
+        apply_theme(choice, &accent, None, cx);
         self.put(THEME_KEY, choice.to_owned(), cx);
     }
 
     fn set_accent(&mut self, hex: String, cx: &mut Context<Self>) {
         let theme = saved_theme(cx.global::<AppGraph>().settings.as_ref());
-        apply_theme(&theme, &hex, cx);
+        apply_theme(&theme, &hex, None, cx);
         self.put(ACCENT_KEY, hex, cx);
     }
 

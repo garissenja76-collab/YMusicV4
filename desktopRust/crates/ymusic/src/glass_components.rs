@@ -184,9 +184,11 @@ pub struct GlassPlayerPanel;
 impl GlassPlayerPanel {
     pub fn wrap(element: Div, cx: &App) -> Div {
         let colors = design_system::active_colors(cx);
+        let ink = design_system::colors(true, false);
         element
             .bg(colors.player_surface)
             .border_color(colors.glass_border)
             .border_t(px(BORDER.width))
+            .text_color(ink.text_primary)
     }
 }

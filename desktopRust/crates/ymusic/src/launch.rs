@@ -8,7 +8,7 @@ use gpui_kit::*;
 use tokio::runtime::Handle;
 use ym_common::http::HttpClients;
 use ym_common::log::Logger;
-use ym_settings::AppDb;
+use ym_settings::{AppDb, SettingsStore};
 
 use crate::cookie_lock::UnlockView;
 use crate::cookie_session::{CookieSession, LockedJar};
@@ -42,12 +42,15 @@ enum Stage {
 
 pub struct Launch {
     stage: Stage,
+    _appearance: Subscription,
 }
 
 impl Launch {
     /// The graph is already a global.
     pub fn shell(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        Self { stage: Stage::Shell(Self::new_shell(window, cx)) }
+        let settings = cx.global::<AppGraph>().settings.clone();
+        let appearance = Self::observe_system_appearance(settings, window, cx);
+        Self { stage: Stage::Shell(Self::new_shell(window, cx)), _appearance: appearance }
     }
 
     pub fn locked(locked: Arc<LockedJar>, inputs: BootInputs, window: &mut Window, cx: &mut Context<Self>) -> Self {
@@ -55,6 +58,8 @@ impl Launch {
             cx.quit();
             true
         });
+        let settings: Arc<dyn SettingsStore> = inputs.app_db.clone();
+        let appearance = Self::observe_system_appearance(settings, window, cx);
         let (tokio, log) = (inputs.tokio.clone(), inputs.log.clone());
         let launch = cx.entity().downgrade();
         let unlock = cx.new(|cx| {
@@ -70,7 +75,17 @@ impl Launch {
             )
         });
         crate::shell::dev_keys(window, cx);
-        Self { stage: Stage::Unlock(unlock) }
+        Self { stage: Stage::Unlock(unlock), _appearance: appearance }
+    }
+
+    fn observe_system_appearance(
+        settings: Arc<dyn SettingsStore>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Subscription {
+        cx.observe_window_appearance(window, move |_, window, cx| {
+            crate::settings_view::sync_system_theme(settings.as_ref(), window, cx);
+        })
     }
 
     fn new_shell(window: &mut Window, cx: &mut Context<Self>) -> Entity<Shell> {

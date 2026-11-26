@@ -171,9 +171,11 @@ impl MiniPlayer {
             None => t(Str::CdSleepTimer).to_owned(),
         };
         let armed = remaining.is_some() || after_current;
+        let player_ink = crate::design_system::colors(true, false).text_secondary;
         self.focus.button(
             STOP_SLEEP,
             action_icon("sleep-timer", MaterialIcon::SleepTimer, t(Str::CdSleepTimer))
+                .text_color(player_ink)
                 .toggled(armed)
                 .when(armed, |button| button.text_color(cx.theme().primary))
                 .tooltip(tooltip)
@@ -278,22 +280,29 @@ impl MiniPlayer {
     }
 
     /// The artist, or the failure in its place.
-    fn subtitle(item: &QueueItem, state: &PlaybackState, cx: &App) -> Option<(String, Hsla)> {
+    fn subtitle(item: &QueueItem, state: &PlaybackState, player_panel: bool, cx: &App) -> Option<(String, Hsla)> {
         let theme = cx.theme();
+        let ink = if player_panel {
+            crate::design_system::colors(true, false)
+        } else {
+            crate::design_system::active_colors(cx)
+        };
         match state {
-            PlaybackState::Error(failure) => Some((failure.text(), theme.danger)),
-            _ => item.artist.clone().map(|artist| (artist, theme.muted_foreground)),
+            PlaybackState::Error(failure) => Some((failure.text(), if player_panel { ink.error } else { theme.danger })),
+            _ => item.artist.clone().map(|artist| {
+                (artist, if player_panel { ink.text_secondary } else { theme.muted_foreground })
+            }),
         }
     }
 
-    fn cover(item: &QueueItem, corner_radius: f32, cx: &App) -> Div {
+    fn cover(item: &QueueItem, corner_radius: f32, placeholder: Hsla, cx: &App) -> Div {
         let art = item.display_thumbnail_url().map(|url| {
             async_image_of(Some(art_request_sources(&url)))
                 .size_full()
                 .rounded(px(corner_radius))
                 .object_fit(ObjectFit::Cover)
         });
-        div().overflow_hidden().rounded(px(corner_radius)).bg(cx.theme().secondary).flex_shrink_0().children(art)
+        div().overflow_hidden().rounded(px(corner_radius)).bg(placeholder).flex_shrink_0().children(art)
     }
 
     fn play_label(playing: bool) -> &'static str {
@@ -348,7 +357,8 @@ impl MiniPlayer {
         let volume = playback.volume;
         let tuned = (playback.effects.speed, playback.effects.pitch) != (1.0, 1.0);
         let (playing, loading) = (playback.is_playing(), playback.is_buffering_or_loading());
-        let subtitle = Self::subtitle(&item, &state, cx);
+        let subtitle = Self::subtitle(&item, &state, true, cx);
+        let player_colors = crate::design_system::colors(true, false);
         let side = width >= BAR_SIDE_MIN;
         let sleep = width >= BAR_SLEEP_MIN;
         let info_width = (width * BAR_INFO_SHARE).max(BAR_INFO_MIN);
@@ -371,7 +381,7 @@ impl MiniPlayer {
                 cx.stop_propagation();
                 cx.emit(ToggleNowPlaying);
             }))
-            .child(Self::cover(&item, 4., cx).size(px(48.)))
+            .child(Self::cover(&item, 4., player_colors.background_elevated, cx).size(px(48.)))
             .child(
                 v_flex()
                     .flex_1()
@@ -400,6 +410,7 @@ impl MiniPlayer {
                                 BAR_SMALL_ICON,
                                 BAR_SMALL_HIT,
                             )
+                            .text_color(player_colors.text_secondary)
                             .toggled(shuffle)
                             .when(shuffle, |button| button.text_color(cx.theme().primary))
                             .on_click(cx.listener(move |player, _, _, cx| {
@@ -410,19 +421,21 @@ impl MiniPlayer {
                     )
                     .child(self.focus.button(
                         STOP_PREVIOUS,
-                        action_icon("previous", MaterialIcon::SkipPrevious, t(Str::CdPrevious)).on_click(cx.listener(
-                            |player, _, _, cx| player.playback.update(cx, |playback, cx| playback.previous(cx)),
-                        )),
+                        action_icon("previous", MaterialIcon::SkipPrevious, t(Str::CdPrevious))
+                            .text_color(player_colors.text_secondary)
+                            .on_click(cx.listener(|player, _, _, cx| {
+                                player.playback.update(cx, |playback, cx| playback.previous(cx))
+                            })),
                         cx,
                     ))
                     .child(self.play_circle(playing, loading, cx))
                     .child(self.focus.button(
                         STOP_NEXT,
-                        action_icon("next", MaterialIcon::SkipNext, t(Str::CdNext)).on_click(
-                            cx.listener(|player, _, _, cx| {
+                        action_icon("next", MaterialIcon::SkipNext, t(Str::CdNext))
+                            .text_color(player_colors.text_secondary)
+                            .on_click(cx.listener(|player, _, _, cx| {
                                 player.playback.update(cx, |playback, cx| playback.next(cx))
-                            }),
-                        ),
+                            })),
                         cx,
                     ))
                     .child(
@@ -435,6 +448,7 @@ impl MiniPlayer {
                                 BAR_SMALL_ICON,
                                 BAR_SMALL_HIT,
                             )
+                            .text_color(player_colors.text_secondary)
                             .toggled(loop_mode != LoopMode::None)
                             .when(loop_mode != LoopMode::None, |button| button.text_color(cx.theme().primary))
                             .on_click(cx.listener(move |player, _, _, cx| {
@@ -457,7 +471,7 @@ impl MiniPlayer {
                         div()
                             .text_xs()
                             .font_semibold()
-                            .text_color(theme.muted_foreground)
+                            .text_color(player_colors.text_secondary)
                             .child(play_clock.elapsed.clone().unwrap_or_default()),
                     )
                     .child({
@@ -485,7 +499,7 @@ impl MiniPlayer {
                         self.focus.slider(STOP_SEEK, &self.seek, stop, slider, cx).flex_1()
                     })
                     .child({
-                        let color = play_clock.total_color(theme.primary, theme.muted_foreground);
+                        let color = play_clock.total_color(theme.primary, player_colors.text_secondary);
                         match play_clock.live_button("bar-live", seekable, &self.playback) {
                             Some(button) => self
                                 .focus
@@ -510,11 +524,11 @@ impl MiniPlayer {
                 .items_center()
                 .child(self.focus.button(
                     STOP_EQUALIZER,
-                    sized_action_icon("equalizer", MaterialIcon::Tune, t(Str::SoundEq), BAR_SMALL_ICON, HIT).on_click(
-                        cx.listener(|player, _, window, cx| {
+                    sized_action_icon("equalizer", MaterialIcon::Tune, t(Str::SoundEq), BAR_SMALL_ICON, HIT)
+                        .text_color(player_colors.text_secondary)
+                        .on_click(cx.listener(|player, _, window, cx| {
                             crate::equalizer::EqualizerDialog::open(player.playback.clone(), window, cx)
-                        }),
-                    ),
+                        })),
                     cx,
                 ))
                 .child(
@@ -527,6 +541,7 @@ impl MiniPlayer {
                             BAR_SMALL_ICON,
                             HIT,
                         )
+                        .text_color(player_colors.text_secondary)
                         .toggled(tuned)
                         .when(tuned, |button| button.text_color(cx.theme().primary))
                         .on_click(cx.listener(|player, _, window, cx| {
@@ -546,7 +561,7 @@ impl MiniPlayer {
                             MaterialIcon::VolumeUp
                         })
                         .size(px(BAR_SMALL_ICON))
-                        .text_color(theme.muted_foreground),
+                        .text_color(player_colors.text_secondary),
                     ),
                 )
                 .child({
@@ -585,7 +600,7 @@ impl MiniPlayer {
             0.
         };
         let (playing, loading) = (playback.is_playing(), playback.is_buffering_or_loading());
-        let subtitle = Self::subtitle(&item, &state, cx);
+        let subtitle = Self::subtitle(&item, &state, false, cx);
         let toggle = h_flex().id("now-playing-toggle").role(Role::Button).aria_label(Self::now_playing_label(&item));
         self.focus
             .item(STOP_INFO, toggle, cx)
@@ -595,7 +610,7 @@ impl MiniPlayer {
             .border_color(theme.border)
             .cursor_pointer()
             .on_click(cx.listener(|_, _, _, cx| cx.emit(ToggleNowPlaying)))
-            .child(Self::cover(&item, 0., cx).h_full().aspect_ratio(16. / 9.))
+            .child(Self::cover(&item, 0., theme.secondary, cx).h_full().aspect_ratio(16. / 9.))
             .child(
                 v_flex()
                     .flex_1()
