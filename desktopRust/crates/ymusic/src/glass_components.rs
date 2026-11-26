@@ -40,6 +40,7 @@ impl GlassCard {
             .border_color(colors.glass_border)
             .bg(colors.glass_surface)
             .shadow(vec![SHADOW_CARD.to_box_shadow()])
+            .active(move |style| style.bg(colors.glass_surface_hover))
     }
 }
 
