@@ -1849,12 +1849,7 @@ impl Shell {
         filter: Option<Entity<FeedView>>,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        h_flex()
-            .gap_2()
-            .px_2()
-            .pt(px(2.))
-            .pb(px(3.))
-            .bg(chrome_tone(cx))
+        top_bar(cx)
             .child(
                 self.chrome_focus.button(
                     CHROME_BACK,
