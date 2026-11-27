@@ -24,7 +24,7 @@ impl GlassCard {
             .active(move |style| style.bg(colors.glass_surface_hover))
     }
 
-    pub fn wrap(child: impl IntoElement, cx: &App) -> Stateful<Div> {
+    pub fn wrap(child: impl IntoElement, cx: &App) -> Div {
         let colors = design_system::active_colors(cx);
         Self::surface(div(), cx)
             .hover(move |style| style.bg(colors.glass_surface_hover))
@@ -105,7 +105,7 @@ impl GlassButton {
 pub struct GlassSidebar;
 
 impl GlassSidebar {
-    pub fn wrap(element: Div, cx: &App) -> Div {
+    pub fn wrap(element: Stateful<Div>, cx: &App) -> Stateful<Div> {
         let colors = design_system::active_colors(cx);
         element
             .bg(colors.glass_surface)
@@ -117,7 +117,7 @@ impl GlassSidebar {
 pub struct GlassNavigationItem;
 
 impl GlassNavigationItem {
-    pub fn wrap(element: Div, selected: bool, selected_fill: Hsla, cx: &App) -> Stateful<Div> {
+    pub fn wrap(element: Stateful<Div>, selected: bool, selected_fill: Hsla, cx: &App) -> Stateful<Div> {
         let hover = design_system::active_colors(cx).glass_surface_hover;
         element
             .rounded(px(RADIUS.small))
@@ -186,7 +186,7 @@ impl GlassPopup {
 pub struct GlassPlayerPanel;
 
 impl GlassPlayerPanel {
-    pub fn wrap(element: Div, cx: &App) -> Div {
+    pub fn wrap(element: Stateful<Div>, cx: &App) -> Stateful<Div> {
         let colors = design_system::active_colors(cx);
         let ink = design_system::colors(true, false);
         element
