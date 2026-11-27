@@ -381,7 +381,13 @@ impl MiniPlayer {
                 cx.stop_propagation();
                 cx.emit(ToggleNowPlaying);
             }))
-            .child(Self::cover(&item, 4., player_colors.background_elevated, cx).size(px(48.)))
+            .child(Self::cover(
+                &item,
+                crate::design_system::RADIUS.small,
+                player_colors.background_elevated,
+                cx,
+            )
+            .size(px(48.)))
             .child(
                 v_flex()
                     .flex_1()

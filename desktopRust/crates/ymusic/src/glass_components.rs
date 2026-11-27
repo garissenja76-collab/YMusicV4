@@ -191,6 +191,8 @@ impl GlassPlayerPanel {
         let ink = design_system::colors(true, false);
         element
             .bg(colors.player_surface)
+            .rounded_tl(px(RADIUS.card))
+            .rounded_tr(px(RADIUS.card))
             .border_color(colors.glass_border)
             .border_t(px(BORDER.width))
             .text_color(ink.text_primary)
