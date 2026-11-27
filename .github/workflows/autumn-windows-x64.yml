@@ -1,0 +1,230 @@
+name: AUTUMN Windows x64
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RUST_TOOLCHAIN: "1.99.1"
+  RUST_TARGET: x86_64-pc-windows-gnu
+  FFMPEG_BUILD_REPO: ymusic-io/ffmpeg-build
+  FFMPEG_BUILD_REF: 4d2dc9ae0c73dc5f01733f18af070412013a6a93
+  MSYS2_INSTALLER_DATE: "2026-09-27"
+  MSYS2_INSTALLER_SHA256: ad336cccfda47758b5e15cda993fbba421115cb0b126697daef1ee4dfe37209f
+
+jobs:
+  windows-x64:
+    if: github.ref == 'refs/heads/autumn-redesign'
+    name: Build AUTUMN for Windows x64
+    runs-on: windows-2022
+
+    steps:
+      - name: Preserve shell-script line endings
+        run: git config --global core.autocrlf false
+
+      - name: Check out AUTUMN
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: YMusicV4
+
+      - name: Check out the pinned FFmpeg build
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ env.FFMPEG_BUILD_REPO }}
+          ref: ${{ env.FFMPEG_BUILD_REF }}
+          path: ffmpeg-build
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up Java
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+
+      - name: Build the embedded JavaScript bundles
+        working-directory: YMusicV4
+        run: .\gradlew.bat :engine-js:closureJs :engine-js:closurePlayerJs
+
+      - id: ffmpeg-cache
+        name: Restore the Windows x64 FFmpeg build cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ffmpeg-build/out/windows-x86_64
+          key: ffmpeg-windows-x86_64-${{ env.FFMPEG_BUILD_REF }}
+
+      - id: msys2-installer-cache
+        name: Restore the pinned MSYS2 installer cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: msys2-installer
+          key: msys2-installer-${{ env.MSYS2_INSTALLER_DATE }}-${{ env.MSYS2_INSTALLER_SHA256 }}
+
+      - name: Seed the pinned MSYS2 installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          day="${MSYS2_INSTALLER_DATE//-/}"
+          file="msys2-base-x86_64-$day.sfx.exe"
+          dir="$(cygpath -u "$RUNNER_TOOL_CACHE")/msys2-installer/0.0.$day/x64"
+          cached=msys2-installer/base.exe
+          mkdir -p "$dir" msys2-installer
+          verified() { echo "$MSYS2_INSTALLER_SHA256  $cached" | sha256sum -c --status; }
+          seed() { cp "$cached" "$dir/base.exe"; touch "$dir.complete"; echo "MSYS2 installer from $1"; exit 0; }
+          if [ -f "$cached" ] && verified; then seed "the cache"; fi
+          for url in \
+            "https://github.com/msys2/msys2-installer/releases/download/$MSYS2_INSTALLER_DATE/$file" \
+            "https://repo.msys2.org/distrib/x86_64/$file" \
+            "https://mirror.msys2.org/distrib/x86_64/$file" \
+            "https://mirrors.tuna.tsinghua.edu.cn/msys2/distrib/x86_64/$file"; do
+            if curl -fsSL --retry 3 --retry-all-errors --connect-timeout 20 -o "$cached" "$url" && verified; then
+              seed "$url"
+            fi
+            echo "::warning::MSYS2 installer download failed: $url"
+          done
+          echo "::error::MSYS2 installer: every source failed" >&2
+          exit 1
+
+      - name: Save the pinned MSYS2 installer cache
+        if: steps.msys2-installer-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: msys2-installer
+          key: ${{ steps.msys2-installer-cache.outputs.cache-primary-key }}
+
+      - id: msys2
+        name: Set up MSYS2 MinGW64
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git make diffutils autoconf automake libtool patch
+            mingw-w64-x86_64-toolchain mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-pkgconf mingw-w64-x86_64-meson
+            mingw-w64-x86_64-ninja mingw-w64-x86_64-zlib
+          cache: false
+
+      - name: Build FFmpeg for Windows x64
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        working-directory: ffmpeg-build
+        env:
+          HOST_CC: gcc
+        run: scripts/build-desktop.sh
+
+      - name: Save the Windows x64 FFmpeg build cache
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ffmpeg-build/out/windows-x86_64
+          key: ${{ steps.ffmpeg-cache.outputs.cache-primary-key }}
+
+      - name: Locate MinGW64
+        shell: bash
+        run: |
+          set -euo pipefail
+          mingw_home="$(cygpath -m '${{ steps.msys2.outputs.msys2-location }}')/mingw64"
+          mingw_bin="$(cygpath -u "$mingw_home")/bin"
+          test -x "$mingw_bin/gcc.exe"
+          test -x "$mingw_bin/objdump.exe"
+          echo "MINGW_HOME=$mingw_home" >> "$GITHUB_ENV"
+
+      - name: Verify the Windows SDK shader compiler
+        shell: pwsh
+        run: |
+          $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
+          $fxc = Get-ChildItem -LiteralPath $sdkBin -Filter fxc.exe -Recurse -File |
+            Where-Object { $_.Directory.Name -eq 'x64' } |
+            Sort-Object { [version]($_.Directory.Parent.Name) } -Descending |
+            Select-Object -First 1
+          if (-not $fxc) { throw 'Windows SDK fxc.exe was not found on this runner.' }
+          "GPUI_FXC_PATH=$($fxc.FullName)" >> $env:GITHUB_ENV
+
+      - name: Install the pinned Rust GNU toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo_bin="$(cygpath -u "$USERPROFILE")/.cargo/bin"
+          if ! command -v rustup >/dev/null; then
+            curl -fsSL -o "$RUNNER_TEMP/rustup-init.exe" \
+              "https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe"
+            "$RUNNER_TEMP/rustup-init.exe" -y --profile minimal --default-host "$RUST_TARGET" --default-toolchain none
+          fi
+          echo "$(cygpath -m "$cargo_bin")" >> "$GITHUB_PATH"
+          export PATH="$cargo_bin:$PATH"
+          command -v rustup
+          rustup toolchain install "$RUST_TOOLCHAIN-$RUST_TARGET" --profile minimal
+          rustup default "$RUST_TOOLCHAIN-$RUST_TARGET"
+          rustc -vV | tee "$RUNNER_TEMP/rustc-version.txt"
+          grep -F "host: $RUST_TARGET" "$RUNNER_TEMP/rustc-version.txt"
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: YMusicV4/desktopRust -> target
+          key: windows-x86_64
+          cache-bin: false
+          save-if: ${{ github.ref == 'refs/heads/autumn-redesign' }}
+
+      - name: Check the packed FFmpeg
+        shell: bash
+        working-directory: YMusicV4/desktopRust
+        run: |
+          set -euo pipefail
+          export YMUSIC_V4_DIR="$GITHUB_WORKSPACE/YMusicV4"
+          export FFMPEG_BUILD_DIR="$GITHUB_WORKSPACE/ffmpeg-build"
+          PATH="$(cygpath -u "$MINGW_HOME")/bin:$PATH" CARGO_TARGET_DIR="$RUNNER_TEMP/ffmpeg-test" \
+            cargo test -p ym-ffmpeg --test duration_format
+
+      - name: Stage the AUTUMN application folder
+        shell: bash
+        working-directory: YMusicV4/desktopRust
+        run: |
+          set -euo pipefail
+          export YMUSIC_V4_DIR="$GITHUB_WORKSPACE/YMusicV4"
+          export FFMPEG_BUILD_DIR="$GITHUB_WORKSPACE/ffmpeg-build"
+          PATH="$(cygpath -u "$MINGW_HOME")/bin:$PATH" \
+            tools/package-windows.sh --arch x86_64 --out "$GITHUB_WORKSPACE/dist"
+
+      - name: Verify staged runtime files
+        shell: pwsh
+        run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE 'dist\YMusic'
+          foreach ($name in @('AUTUMN.exe', 'ffmpeg.exe')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $app $name) -PathType Leaf)) {
+              throw "Required runtime file is missing: $name"
+            }
+          }
+          if (-not (Get-ChildItem -LiteralPath $app -Filter '*.dll' -File)) {
+            throw 'The staged application has no runtime DLLs.'
+          }
+          Push-Location -LiteralPath $app
+          try {
+            $ffmpegOutput = & .\ffmpeg.exe -version 2>&1
+            $ffmpegExitCode = $LASTEXITCODE
+          } catch {
+            throw "Could not start staged ffmpeg.exe -version from '$app': $_"
+          } finally {
+            Pop-Location
+          }
+          if ($ffmpegExitCode -ne 0) {
+            throw "Staged ffmpeg.exe -version failed with exit code $ffmpegExitCode`n$($ffmpegOutput -join [Environment]::NewLine)"
+          }
+          $ffmpegOutput
+
+      - name: Upload AUTUMN Windows x64 application
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: AUTUMN-Windows-x64
+          path: dist/YMusic/
+          if-no-files-found: error
