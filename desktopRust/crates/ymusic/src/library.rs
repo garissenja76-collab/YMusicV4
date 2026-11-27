@@ -2066,7 +2066,7 @@ impl LibraryView {
             subtitle.map(|subtitle| div().text_xs().text_color(theme.muted_foreground).truncate().child(subtitle));
         let colors = crate::design_system::active_colors(cx);
         let item = if grid {
-            crate::glass_components::GlassCard::surface(div(), cx).id(id)
+            crate::glass_components::GlassCard::surface(div().id(id), cx)
         } else {
             div().id(id).rounded(px(10.))
         };

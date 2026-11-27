@@ -3,7 +3,7 @@
 use gpui_kit::component::button::{Button, ButtonCustomVariant, ButtonRounded, ButtonVariants};
 use gpui_kit::component::dialog::Dialog;
 use gpui_kit::component::menu::PopupMenuStyle;
-use gpui_kit::component::{ActiveTheme, Colorize, FocusableExt, Sizable, StyledExt};
+use gpui_kit::component::{ActiveTheme, FocusableExt, Icon, Size, Sizable, h_flex};
 use gpui_kit::prelude::FluentBuilder;
 use gpui_kit::*;
 
@@ -12,7 +12,7 @@ use crate::design_system::{self, BORDER, RADIUS, SHADOW_CARD, SHADOW_MODAL, SHAD
 pub struct GlassCard;
 
 impl GlassCard {
-    pub fn surface(element: Div, cx: &App) -> Div {
+    pub fn surface(element: Stateful<Div>, cx: &App) -> Stateful<Div> {
         let colors = design_system::active_colors(cx);
         element
             .rounded(px(RADIUS.card))
@@ -26,9 +26,13 @@ impl GlassCard {
 
     pub fn wrap(child: impl IntoElement, cx: &App) -> Div {
         let colors = design_system::active_colors(cx);
-        Self::surface(div(), cx)
+        div()
+            .rounded(px(RADIUS.card))
+            .border(px(BORDER.width))
+            .border_color(colors.glass_border)
+            .bg(colors.glass_surface)
+            .shadow(vec![SHADOW_CARD.to_box_shadow()])
             .hover(move |style| style.bg(colors.glass_surface_hover))
-            .active(move |style| style.bg(colors.glass_surface_hover))
             .child(child)
     }
 
