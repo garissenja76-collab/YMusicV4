@@ -2070,7 +2070,6 @@ impl Shell {
         if !labelled {
             return entry
                 .size(px(48.))
-                .rounded(px(8.))
                 .flex()
                 .items_center()
                 .justify_center()

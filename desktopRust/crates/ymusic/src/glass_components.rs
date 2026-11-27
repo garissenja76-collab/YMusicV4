@@ -120,6 +120,7 @@ impl GlassNavigationItem {
     pub fn wrap(element: Div, selected: bool, selected_fill: Hsla, cx: &App) -> Stateful<Div> {
         let hover = design_system::active_colors(cx).glass_surface_hover;
         element
+            .rounded(px(RADIUS.small))
             .when(selected, |entry| entry.bg(selected_fill))
             .hover(move |style| style.bg(if selected { selected_fill.blend(hover) } else { hover }))
             .active(move |style| style.bg(selected_fill.blend(hover)))
